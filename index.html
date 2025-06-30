@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f9f9f9;
+      background: #f5f5f5;
       margin: 0;
       padding: 0;
     }
@@ -27,21 +27,17 @@
       border-radius: 8px;
       box-shadow: 0 0 12px rgba(0,0,0,0.1);
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
     }
-    th, td {
-      padding: 12px;
-      border: 1px solid #ccc;
-      text-align: center;
+    form input, form select {
+      padding: 8px;
+      flex: 1 1 180px;
+      font-size: 14px;
     }
-    th {
-      background-color: #b38b00;
-      color: #000;
-    }
-    button {
+    form button {
       background-color: #b38b00;
       color: #000;
       border: none;
@@ -49,10 +45,28 @@
       font-weight: bold;
       cursor: pointer;
       border-radius: 6px;
-      margin-bottom: 20px;
+      margin-top: 10px;
     }
-    button:hover {
+    form button:hover {
       background-color: #d2af00;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    th {
+      background-color: #b38b00;
+      color: #000;
+    }
+    #gerarPDF {
+      margin-top: 20px;
+      float: right;
     }
   </style>
 </head>
@@ -60,7 +74,27 @@
 
 <header>CRM - Leads de Consórcio</header>
 <div class="container">
-  <button onclick="gerarPDF()">Baixar Dados em PDF</button>
+  <form id="formCliente">
+    <input type="text" id="nome" placeholder="Nome" required />
+    <input type="tel" id="telefone" placeholder="Telefone (com DDD)" required />
+    <input type="email" id="email" placeholder="Email" required />
+    <select id="tipo" required>
+      <option value="">Tipo</option>
+      <option value="Automóvel">Automóvel</option>
+      <option value="Imóvel">Imóvel</option>
+    </select>
+    <input type="number" id="valor" placeholder="Valor desejado (R$)" required />
+    <select id="status" required>
+      <option value="">Status</option>
+      <option value="Novo">Novo</option>
+      <option value="Em negociação">Em negociação</option>
+      <option value="Fechado">Fechado</option>
+      <option value="Perdido">Perdido</option>
+    </select>
+    <button type="submit">Cadastrar Cliente</button>
+  </form>
+
+  <button id="gerarPDF" onclick="gerarPDF()">Baixar Dados em PDF</button>
 
   <table id="tabela-leads">
     <thead>
@@ -75,63 +109,79 @@
         <th>Status</th>
       </tr>
     </thead>
-    <tbody id="corpo-tabela">
-      <!-- Dados serão inseridos aqui -->
-    </tbody>
+    <tbody id="corpo-tabela"></tbody>
   </table>
 </div>
 
-<!-- Bibliotecas JS -->
+<!-- Bibliotecas -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
 <script>
-  // Dados simulados – você pode trocar por dados reais
-  const leads = [
-    {
-      codigo: "CL-1234",
-      nome: "João Silva",
-      telefone: "(49) 91234-5678",
-      email: "joao@email.com",
-      tipo: "Automóvel",
-      valor: "R$ 80.000,00",
-      parcela: "R$ 952,38",
-      status: "Novo"
-    },
-    {
-      codigo: "CL-5678",
-      nome: "Maria Souza",
-      telefone: "(49) 99876-5432",
-      email: "maria@email.com",
-      tipo: "Imóvel",
-      valor: "R$ 300.000,00",
-      parcela: "R$ 1.363,64",
-      status: "Em negociação"
-    }
-  ];
+  const leads = [];
 
-  // Preencher tabela HTML
-  const corpoTabela = document.getElementById('corpo-tabela');
-  function carregarTabela() {
-    corpoTabela.innerHTML = '';
-    leads.forEach((lead) => {
-      const tr = document.createElement('tr');
-      Object.values(lead).forEach(valor => {
-        const td = document.createElement('td');
-        td.textContent = valor;
-        tr.appendChild(td);
+  const form = document.getElementById("formCliente");
+  const tabela = document.getElementById("corpo-tabela");
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const nome = document.getElementById("nome").value.trim();
+    const telefone = formatarTelefone(document.getElementById("telefone").value.trim());
+    const email = document.getElementById("email").value.trim();
+    const tipo = document.getElementById("tipo").value;
+    const valor = parseFloat(document.getElementById("valor").value);
+    const status = document.getElementById("status").value;
+
+    if (!nome || !telefone || !email || !tipo || !valor || !status) return alert("Preencha todos os campos!");
+
+    const codigo = "CL-" + Math.floor(1000 + Math.random() * 9000);
+    const taxa = tipo === "Imóvel" ? 0.22 : 0.16;
+    const parcelas = tipo === "Imóvel" ? 220 : 84;
+    const total = valor + (valor * taxa);
+    const parcela = total / parcelas;
+
+    const lead = {
+      codigo,
+      nome,
+      telefone,
+      email,
+      tipo,
+      valor: total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+      parcela: parcela.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+      status
+    };
+
+    leads.push(lead);
+    atualizarTabela();
+    form.reset();
+  });
+
+  function atualizarTabela() {
+    tabela.innerHTML = "";
+    leads.forEach(lead => {
+      const row = document.createElement("tr");
+      Object.values(lead).forEach(text => {
+        const td = document.createElement("td");
+        td.textContent = text;
+        row.appendChild(td);
       });
-      corpoTabela.appendChild(tr);
+      tabela.appendChild(row);
     });
   }
-  carregarTabela();
 
-  // Gerar PDF
-  async function gerarPDF() {
+  function formatarTelefone(tel) {
+    tel = tel.replace(/\D/g, "");
+    return tel.length === 11
+      ? `(${tel.slice(0, 2)}) ${tel.slice(2, 7)}-${tel.slice(7)}`
+      : tel;
+  }
+
+  function gerarPDF() {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const doc = new jsPDF({ unit: 'pt' });
     doc.setFontSize(16);
-    doc.text('Relatório de Leads - Consórcio', 40, 40);
+    doc.text("Relatório de Leads de Consórcio", 40, 40);
 
     const colunas = ["Código", "Nome", "Telefone", "Email", "Tipo", "Valor", "Parcela", "Status"];
     const linhas = leads.map(lead => Object.values(lead));
@@ -140,10 +190,10 @@
       head: [colunas],
       body: linhas,
       startY: 60,
-      styles: { fontSize: 10 },
+      styles: { fontSize: 10 }
     });
 
-    doc.save('relatorio_leads.pdf');
+    doc.save("relatorio_leads.pdf");
   }
 </script>
 
