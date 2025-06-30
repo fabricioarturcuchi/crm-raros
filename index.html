@@ -1,111 +1,56 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CRM - Leads Consórcio</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f3f3f3;
-      margin: 0; padding: 0;
-    }
-    header {
-      background: #b38b00;
-      color: #000;
-      padding: 20px;
-      text-align: center;
-      font-size: 1.8rem;
-    }
-    .container {
-      max-width: 900px;
-      margin: 30px auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-    }
-    form {
-      display: grid;
-      grid-template-columns: repeat(auto-fill,minmax(200px,1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-    label { font-weight: bold; margin-bottom: 5px; }
-    input, select, button {
-      padding: 10px;
-      font-size: 1rem;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    button {
-      background: #b38b00;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button:hover { background: #d2af00; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-    }
-    th { background: #b38b00; color: #000; }
-    .action-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 1rem;
-      margin: 0 4px;
-    }
-    .action-btn.edit { color: #0066cc; }
-    .action-btn.delete { color: #cc0000; }
-    @media(max-width: 600px) {
-      form { grid-template-columns: 1fr; }
-    }
-  </style>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CRM - Leads Consórcio</title>
+<style>
+  body { font-family: Arial,sans-serif; background: #f4f4f4; margin:0; padding:0 }
+  header { background:#b38b00; color:#000; padding:20px; text-align:center; font-size:1.8rem }
+  .container { max-width:1000px; margin:30px auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 0 15px rgba(0,0,0,0.1) }
+  form { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:15px; margin-bottom:20px }
+  label { display:flex; flex-direction:column; font-weight:bold }
+  input, select, button { padding:10px; font-size:1rem; border-radius:5px; border:1px solid #ccc; box-sizing:border-box }
+  button { background:#b38b00; color:#000; font-weight:bold; cursor:pointer; }
+  button:hover { background:#d2af00 }
+  #search { width:calc(100% - 160px); padding:10px; margin-right:10px; border-radius:5px; border:1px solid #ccc }
+  table { width:100%; border-collapse:collapse; margin-top:20px }
+  th, td { border:1px solid #ddd; padding:8px; text-align:center }
+  th { background:#b38b00; color:#000 }
+  .actions button { background:#eee; border:1px solid #ccc; padding:5px 8px; margin:0 2px; border-radius:4px; font-size:13px; cursor:pointer }
+  .actions .edit { color:#0055cc }
+  .actions .delete { color:#cc0000 }
+  @media(max-width:600px) { form { grid-template-columns:1fr } }
+</style>
 </head>
 <body>
 
 <header>CRM - Leads de Consórcio</header>
 <div class="container">
+
+  <div style="display:flex; margin-bottom:10px">
+    <input id="search" type="text" placeholder="Buscar leads..."/>
+    <button onclick="generatePDF()">Exportar Relatório (PDF)</button>
+  </div>
+
   <form id="leadForm">
-    <input type="hidden" id="leadId" />
-    <div>
-      <label for="nome">Nome</label>
-      <input type="text" id="nome" required/>
-    </div>
-    <div>
-      <label for="telefone">Telefone</label>
-      <input type="tel" id="telefone" required/>
-    </div>
-    <div>
-      <label for="email">E-mail</label>
-      <input type="email" id="email" required/>
-    </div>
-    <div>
-      <label for="tipoConsorcio">Tipo de Consórcio</label>
-      <select id="tipoConsorcio" required>
+    <input type="hidden" id="leadId">
+    <label>Nome<input type="text" id="nome" required></label>
+    <label>Telefone<input type="tel" id="telefone" required></label>
+    <label>Email<input type="email" id="email" required></label>
+    <label>Tipo de Consórcio<select id="tipoConsorcio" required>
         <option value="" disabled selected>-- Selecione --</option>
         <option value="Automóvel">Automóvel</option>
         <option value="Imóvel">Imóvel</option>
-      </select>
-    </div>
-    <div>
-      <label for="valorDesejado">Valor Desejado</label>
-      <input type="number" id="valorDesejado" min="0" required/>
-    </div>
-    <div>
-      <label for="valorParcela">Valor da Parcela</label>
-      <input type="text" id="valorParcela" readonly />
-    </div>
-    <div style="grid-column: 1 / -1; text-align:center;">
+    </select></label>
+    <label>Valor Desejado<input type="number" id="valorDesejado" min="0" required></label>
+    <label>Valor da Parcela<input type="text" id="valorParcela" readonly></label>
+    <label>Status<select id="status">
+        <option value="Novo">Novo</option>
+        <option value="Em negociação">Em negociação</option>
+        <option value="Concluído">Concluído</option>
+        <option value="Perdido">Perdido</option>
+    </select></label>
+    <div style="grid-column:1/-1; text-align:center">
       <button type="submit">Salvar Lead</button>
     </div>
   </form>
@@ -113,107 +58,142 @@
   <table>
     <thead>
       <tr>
-        <th>Nome</th><th>Telefone</th><th>Email</th><th>Tipo</th><th>Valor</th><th>Parcela</th><th>Ações</th>
+        <th>Código</th><th>Nome</th><th>Telefone</th><th>Tipo</th><th>Valor</th><th>Parcela</th><th>Status</th><th>Ações</th>
       </tr>
     </thead>
     <tbody id="leadTable"></tbody>
   </table>
+
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 <script>
-  const form = document.getElementById('leadForm');
-  const leadIdInput = document.getElementById('leadId');
-  const nomeInput = document.getElementById('nome');
-  const telInput = document.getElementById('telefone');
-  const emailInput = document.getElementById('email');
-  const tipoInput = document.getElementById('tipoConsorcio');
-  const valorInput = document.getElementById('valorDesejado');
-  const parcelaInput = document.getElementById('valorParcela');
-  const leadTable = document.getElementById('leadTable');
+  const TAXA = { "Automóvel":0.16, "Imóvel":0.22 };
+  const PRAZO = { "Automóvel":84, "Imóvel":220 };
+  let leads = JSON.parse(localStorage.getItem("leads")||"[]");
 
-  const TAXA = { 'Automóvel': 0.16, 'Imóvel': 0.22 };
-  const PRAZO = { 'Automóvel': 84, 'Imóvel': 220 };
+  const form = document.getElementById("leadForm"),
+        nomeI = document.getElementById("nome"),
+        telI = document.getElementById("telefone"),
+        emailI = document.getElementById("email"),
+        tipoI = document.getElementById("tipoConsorcio"),
+        valorI = document.getElementById("valorDesejado"),
+        parcelaI = document.getElementById("valorParcela"),
+        statusI = document.getElementById("status"),
+        tableB = document.getElementById("leadTable"),
+        searchI = document.getElementById("search"),
+        idI = document.getElementById("leadId");
 
-  let leads = JSON.parse(localStorage.getItem('leads') || '[]');
+  function formatPhone(v) {
+    v = v.replace(/\D/g, '');
+    if (v.length <= 2) return "(" + v;
+    if (v.length <= 6) return `(${v.slice(0,2)}) ${v.slice(2)}`;
+    if (v.length <= 10) return `(${v.slice(0,2)}) ${v.slice(2,6)}-${v.slice(6)}`;
+    return `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7,11)}`;
+  }
+  telI.addEventListener("input", () => {
+    telI.value = formatPhone(telI.value);
+  });
 
-  function calcularParcela() {
-    const tipo = tipoInput.value;
-    const valor = Number(valorInput.value);
-    if (TAXA[tipo] && valor > 0) {
-      const total = valor * (1 + TAXA[tipo]);
-      const parcela = total / PRAZO[tipo];
-      parcelaInput.value = parcela.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-    } else parcelaInput.value = '';
+  function gerarCodigo() {
+    return "CL-" + Math.floor(1000 + Math.random()*9000);
   }
 
-  tipoInput.addEventListener('change', calcularParcela);
-  valorInput.addEventListener('input', calcularParcela);
+  function calcParc(){
+    const t = tipoI.value,
+          v = Number(valorI.value);
+    if (TAXA[t] && v > 0) {
+      const tot = v * (1 + TAXA[t]),
+            parc = tot / PRAZO[t];
+      parcelaI.value = parc.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+    } else parcelaI.value = "";
+  }
+  tipoI.addEventListener("change", calcParc);
+  valorI.addEventListener("input", calcParc);
 
-  function renderTable() {
-    leadTable.innerHTML = '';
-    leads.forEach((l, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${l.nome}</td>
-        <td>${l.telefone}</td>
-        <td>${l.email}</td>
-        <td>${l.tipoConsorcio}</td>
-        <td>${Number(l.valorDesejado).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td>
-        <td>${l.valorParcela}</td>
-        <td>
-          <button class="action-btn edit" onclick="editLead(${i})">✎</button>
-          <button class="action-btn delete" onclick="deleteLead(${i})">🗑️</button>
-        </td>`;
-      leadTable.appendChild(tr);
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const lead = {
+      codigo: idI.value ? leads[idI.value].codigo : gerarCodigo(),
+      nome: nomeI.value.trim(),
+      telefone: telI.value.trim(),
+      email: emailI.value.trim(),
+      tipoConsorcio: tipoI.value,
+      valorDesejado: valorI.value,
+      valorParcela: parcelaI.value,
+      status: statusI.value
+    };
+    if (idI.value) leads[idI.value] = lead;
+    else leads.push(lead);
+    localStorage.setItem("leads", JSON.stringify(leads));
+    renderTable();
+    form.reset();
+    parcelaI.value="";
+    idI.value="";
+  });
+
+  function renderTable(){
+    const term = searchI.value.toLowerCase();
+    tableB.innerHTML = "";
+    leads.forEach((l,i) => {
+      const row = [l.codigo, l.nome, l.telefone, l.tipoConsorcio,
+                   Number(l.valorDesejado).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}),
+                   l.valorParcela, l.status];
+      if (row.some(c => c.toString().toLowerCase().includes(term))) {
+        const tr = document.createElement("tr");
+        row.forEach(c => {
+          const td = document.createElement("td");
+          td.textContent = c;
+          tr.appendChild(td);
+        });
+        const tdA = document.createElement("td");
+        tdA.className = "actions";
+        tdA.innerHTML = `<button onclick="editLead(${i})">✎</button>
+                         <button onclick="deleteLead(${i})">🗑️</button>`;
+        tr.appendChild(tdA);
+        tableB.appendChild(tr);
+      }
     });
   }
 
-  function resetForm() {
-    form.reset();
-    parcelaInput.value = '';
-    leadIdInput.value = '';
+  function editLead(i){
+    const l = leads[i];
+    idI.value = i;
+    nomeI.value = l.nome;
+    telI.value = l.telefone;
+    emailI.value = l.email;
+    tipoI.value = l.tipoConsorcio;
+    valorI.value = l.valorDesejado;
+    parcelaI.value = l.valorParcela;
+    statusI.value = l.status;
   }
 
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-    const lead = {
-      nome: nomeInput.value.trim(),
-      telefone: telInput.value.trim(),
-      email: emailInput.value.trim(),
-      tipoConsorcio: tipoInput.value,
-      valorDesejado: valorInput.value,
-      valorParcela: parcelaInput.value
-    };
-
-    const id = leadIdInput.value;
-    if (id) leads[id] = lead;
-    else leads.push(lead);
-
-    localStorage.setItem('leads', JSON.stringify(leads));
-    renderTable();
-    resetForm();
-  });
-
-  window.editLead = i => {
-    const l = leads[i];
-    leadIdInput.value = i;
-    nomeInput.value = l.nome;
-    telInput.value = l.telefone;
-    emailInput.value = l.email;
-    tipoInput.value = l.tipoConsorcio;
-    valorInput.value = l.valorDesejado;
-    parcelaInput.value = l.valorParcela;
-  };
-
-  window.deleteLead = i => {
-    if (confirm('Deseja realmente excluir esse lead?')) {
-      leads.splice(i, 1);
-      localStorage.setItem('leads', JSON.stringify(leads));
+  function deleteLead(i){
+    if (confirm("Excluir este lead?")) {
+      leads.splice(i,1);
+      localStorage.setItem("leads", JSON.stringify(leads));
       renderTable();
     }
-  };
+  }
 
+  searchI.addEventListener("input", renderTable);
   renderTable();
+
+  async function generatePDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({unit:"pt",format:"a4"});
+    doc.setFontSize(16);
+    doc.text("Relatório de Leads - Consórcio", 40, 40);
+    const cols = ["Código","Nome","Telefone","Tipo","Valor","Parcela","Status"];
+    const rows = leads.map(l=>[
+      l.codigo,l.nome,l.telefone,l.tipoConsorcio,
+      Number(l.valorDesejado).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}),
+      l.valorParcela,l.status
+    ]);
+    doc.autoTable({ head:[cols], body:rows, startY:60, styles:{ fontSize:10 }});
+    doc.save("leads-consorcio.pdf");
+  }
 </script>
 
 </body>
