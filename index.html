@@ -59,10 +59,16 @@
       padding: 10px;
       border: 1px solid #ccc;
       text-align: center;
+      font-size: 14px;
     }
     th {
       background-color: #b38b00;
       color: #000;
+    }
+    .actions button {
+      font-size: 12px;
+      padding: 5px 8px;
+      margin: 2px;
     }
     #gerarPDF {
       margin-top: 20px;
@@ -75,6 +81,7 @@
 <header>CRM - Leads de Consórcio</header>
 <div class="container">
   <form id="formCliente">
+    <input type="hidden" id="editIndex" />
     <input type="text" id="nome" placeholder="Nome" required />
     <input type="tel" id="telefone" placeholder="Telefone (com DDD)" required />
     <input type="email" id="email" placeholder="Email" required />
@@ -91,7 +98,7 @@
       <option value="Fechado">Fechado</option>
       <option value="Perdido">Perdido</option>
     </select>
-    <button type="submit">Cadastrar Cliente</button>
+    <button type="submit">Salvar Cliente</button>
   </form>
 
   <button id="gerarPDF" onclick="gerarPDF()">Baixar Dados em PDF</button>
@@ -107,13 +114,14 @@
         <th>Valor</th>
         <th>Parcela</th>
         <th>Status</th>
+        <th>Ações</th>
       </tr>
     </thead>
     <tbody id="corpo-tabela"></tbody>
   </table>
 </div>
 
-<!-- Bibliotecas -->
+<!-- Bibliotecas PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
@@ -126,48 +134,106 @@
   form.addEventListener("submit", function (e) {
     e.preventDefault();
 
+    const editIndex = document.getElementById("editIndex").value;
     const nome = document.getElementById("nome").value.trim();
     const telefone = formatarTelefone(document.getElementById("telefone").value.trim());
     const email = document.getElementById("email").value.trim();
     const tipo = document.getElementById("tipo").value;
-    const valor = parseFloat(document.getElementById("valor").value);
+    const valorBruto = parseFloat(document.getElementById("valor").value);
     const status = document.getElementById("status").value;
 
-    if (!nome || !telefone || !email || !tipo || !valor || !status) return alert("Preencha todos os campos!");
+    if (!nome || !telefone || !email || !tipo || !valorBruto || !status) return alert("Preencha todos os campos!");
 
-    const codigo = "CL-" + Math.floor(1000 + Math.random() * 9000);
     const taxa = tipo === "Imóvel" ? 0.22 : 0.16;
     const parcelas = tipo === "Imóvel" ? 220 : 84;
-    const total = valor + (valor * taxa);
-    const parcela = total / parcelas;
+    const valorTotal = valorBruto + (valorBruto * taxa);
+    const valorParcela = valorTotal / parcelas;
 
     const lead = {
-      codigo,
+      codigo: editIndex !== "" ? leads[editIndex].codigo : "CL-" + Math.floor(1000 + Math.random() * 9000),
       nome,
       telefone,
       email,
       tipo,
-      valor: total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
-      parcela: parcela.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+      valor: valorTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+      parcela: valorParcela.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
       status
     };
 
-    leads.push(lead);
+    if (editIndex !== "") {
+      leads[editIndex] = lead;
+    } else {
+      leads.push(lead);
+    }
+
     atualizarTabela();
     form.reset();
+    document.getElementById("editIndex").value = "";
   });
 
   function atualizarTabela() {
     tabela.innerHTML = "";
-    leads.forEach(lead => {
+    leads.forEach((lead, index) => {
       const row = document.createElement("tr");
-      Object.values(lead).forEach(text => {
+
+      Object.entries(lead).forEach(([key, value]) => {
         const td = document.createElement("td");
-        td.textContent = text;
+
+        if (key === "status") {
+          const select = document.createElement("select");
+          ["Novo", "Em negociação", "Fechado", "Perdido"].forEach(opt => {
+            const option = document.createElement("option");
+            option.value = opt;
+            option.text = opt;
+            if (lead.status === opt) option.selected = true;
+            select.appendChild(option);
+          });
+          select.onchange = () => {
+            lead.status = select.value;
+          };
+          td.appendChild(select);
+        } else {
+          td.textContent = value;
+        }
+
         row.appendChild(td);
       });
+
+      const tdAcoes = document.createElement("td");
+      tdAcoes.classList.add("actions");
+
+      const btnEditar = document.createElement("button");
+      btnEditar.textContent = "Editar";
+      btnEditar.onclick = () => carregarParaEdicao(index);
+      tdAcoes.appendChild(btnEditar);
+
+      const btnExcluir = document.createElement("button");
+      btnExcluir.textContent = "Excluir";
+      btnExcluir.onclick = () => excluirCliente(index);
+      tdAcoes.appendChild(btnExcluir);
+
+      row.appendChild(tdAcoes);
       tabela.appendChild(row);
     });
+  }
+
+  function carregarParaEdicao(index) {
+    const lead = leads[index];
+    document.getElementById("editIndex").value = index;
+    document.getElementById("nome").value = lead.nome;
+    document.getElementById("telefone").value = lead.telefone;
+    document.getElementById("email").value = lead.email;
+    document.getElementById("tipo").value = lead.tipo;
+    document.getElementById("valor").value = parseFloat(lead.valor.replace(/[^\d]+/g, ''));
+    document.getElementById("status").value = lead.status;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function excluirCliente(index) {
+    if (confirm("Tem certeza que deseja excluir este cliente?")) {
+      leads.splice(index, 1);
+      atualizarTabela();
+    }
   }
 
   function formatarTelefone(tel) {
@@ -184,7 +250,10 @@
     doc.text("Relatório de Leads de Consórcio", 40, 40);
 
     const colunas = ["Código", "Nome", "Telefone", "Email", "Tipo", "Valor", "Parcela", "Status"];
-    const linhas = leads.map(lead => Object.values(lead));
+    const linhas = leads.map(lead => [
+      lead.codigo, lead.nome, lead.telefone, lead.email,
+      lead.tipo, lead.valor, lead.parcela, lead.status
+    ]);
 
     doc.autoTable({
       head: [colunas],
